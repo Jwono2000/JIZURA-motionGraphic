@@ -25,6 +25,7 @@ J.defaultProject = () => ({
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   bgMedia: { mode: 'off', sw: 'part', fit: 'cover', dim: 0.25 },  // motionGraphic: user bg image/video (off|on, part|random, cover|contain)
   keywords: { enabled: false, title: '', titleMode: 'random', titleX: 0.5, titleY: 0.18, phrases: [], fg: '#FFFFFF', accent: '#FFD400', density: 0.5 },
+  regions: { lyric: { x: 0, y: 0, w: 1, h: 1 }, keyword: { x: 0, y: 0, w: 1, h: 1 } },  // motionGraphic: draggable regions (0-1)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
   typeset: false,                 // 文字整列: kana tracking, small particles / big first character, Latin sizing, 0.2 s lead, restraint
   centerDir: 'tb',                // 中央を空ける on tall frames: 'tb' = top / bottom, 'lr' = left / right
@@ -298,6 +299,10 @@ J.plan = (project, audio) => {
     hud: fx.hud === 'on' ? true : fx.hud === 'off' ? false : !!st.hud,
     keyBg: J.keyMode ? J.keyMode(project) : null,   // 'green' | 'black' | null — 合成用の背景
     bgMedia: Object.assign({ mode: 'off', sw: 'part', fit: 'cover', dim: 0.25 }, project.bgMedia || {}),
+    regions: {
+      lyric: Object.assign({ x: 0, y: 0, w: 1, h: 1 }, (project.regions && project.regions.lyric) || {}),
+      keyword: Object.assign({ x: 0, y: 0, w: 1, h: 1 }, (project.regions && project.regions.keyword) || {}),
+    },
     centerFree: !!zones, zones,
     typeset: !!project.typeset, unify: !!project.unify,
     lang: J.resolveLang ? J.resolveLang(project) : 'ja',   // 歌詞の言語 (auto → detected)

@@ -1689,6 +1689,89 @@ function bind() {
   $('kwPhrases').addEventListener('input', e => { kwGet().phrases = e.target.value.split('\n'); replanSoon(400); });
   $('kwPhrases').addEventListener('change', () => flushSave());
   J.kwUI = { sync: kwSync };
+  /* motionGraphic: region drag UI */
+  const regionGet = () => {
+    if (!S.project.regions) S.project.regions = { lyric: { x: 0, y: 0, w: 1, h: 1 }, keyword: { x: 0, y: 0, w: 1, h: 1 } };
+    return S.project.regions;
+  };
+  const regionBoxes = () => ({
+    lyric: $('regionLyric'),
+    keyword: $('regionKeyword'),
+  });
+  const regionLayout = () => {
+    const view = $('view'), vp = $('viewport');
+    if (!view || !vp) return;
+    const vr = view.getBoundingClientRect(), vpr = vp.getBoundingClientRect();
+    const ox = vr.left - vpr.left, oy = vr.top - vpr.top, vw = vr.width, vh = vr.height;
+    const regs = regionGet();
+    const boxes = regionBoxes();
+    for (const k of ['lyric', 'keyword']) {
+      const b = boxes[k], r = regs[k] || { x: 0, y: 0, w: 1, h: 1 };
+      b.style.left = (ox + r.x * vw) + 'px';
+      b.style.top = (oy + r.y * vh) + 'px';
+      b.style.width = (r.w * vw) + 'px';
+      b.style.height = (r.h * vh) + 'px';
+    }
+  };
+  const regionSave = (k, r) => {
+    regionGet()[k] = { x: +r.x.toFixed(4), y: +r.y.toFixed(4), w: +r.w.toFixed(4), h: +r.h.toFixed(4) };
+    replan(); flushSave();
+  };
+  let dragSt = null;
+  const regionDown = (e, k, isResize) => {
+    e.preventDefault(); e.stopPropagation();
+    const view = $('view');
+    const vr = view.getBoundingClientRect();
+    const r = Object.assign({}, regionGet()[k] || { x: 0, y: 0, w: 1, h: 1 });
+    dragSt = { k, isResize, vr, r, sx: e.clientX, sy: e.clientY };
+    const move = (ev) => {
+      if (!dragSt) return;
+      const dx = (ev.clientX - dragSt.sx) / dragSt.vr.width;
+      const dy = (ev.clientY - dragSt.sy) / dragSt.vr.height;
+      const nr = Object.assign({}, dragSt.r);
+      if (dragSt.isResize) {
+        nr.w = Math.min(1 - nr.x, Math.max(0.05, dragSt.r.w + dx));
+        nr.h = Math.min(1 - nr.y, Math.max(0.05, dragSt.r.h + dy));
+      } else {
+        nr.x = Math.min(1 - nr.w, Math.max(0, dragSt.r.x + dx));
+        nr.y = Math.min(1 - nr.h, Math.max(0, dragSt.r.y + dy));
+      }
+      regionGet()[k] = nr;
+      regionLayout();
+    };
+    const up = () => {
+      if (dragSt) regionSave(k, regionGet()[k]);
+      dragSt = null;
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+  const regionBind = () => {
+    const boxes = regionBoxes();
+    for (const k of ['lyric', 'keyword']) {
+      const b = boxes[k];
+      if (!b || b.dataset.bound) continue;
+      b.dataset.bound = '1';
+      b.addEventListener('mousedown', (e) => {
+        const isResize = e.target.classList.contains('region-handle');
+        regionDown(e, k, isResize);
+      });
+    }
+  };
+  $('regionEdit').addEventListener('change', e => {
+    $('regionUI').hidden = !e.target.checked;
+    if (e.target.checked) { regionBind(); regionLayout(); }
+  });
+  $('btnRegionReset').addEventListener('click', () => {
+    S.project.regions = { lyric: { x: 0, y: 0, w: 1, h: 1 }, keyword: { x: 0, y: 0, w: 1, h: 1 } };
+    regionLayout(); replan(); flushSave();
+    toast('領域をリセットしました');
+  });
+  // re-layout on resize / aspect change
+  window.addEventListener('resize', () => { if (!$('regionUI').hidden) regionLayout(); });
+  J.regionUI = { layout: regionLayout };
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapRate').addEventListener('change', () => {

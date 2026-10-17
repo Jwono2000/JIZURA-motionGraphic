@@ -108,10 +108,11 @@ J.drawKeywords = (ctx, plan, t, W, H, sc) => {
   if (!events || !events.length) return;
   const kw = plan.keywords || {};
   const minWH = Math.min(W, H);
-  for (const ev of events) {
-    if (t < ev.start || t > ev.start + ev.dur) continue;
+  // region transform for non-title keywords (title in fixed mode uses absolute position)
+  const region = plan.regions && plan.regions.keyword;
+  const useRegion = region && (region.x !== 0 || region.y !== 0 || region.w !== 1 || region.h !== 1);
+  const drawEvent = (ev) => {
     const lt = t - ev.start;
-    // pseudo-cut for J.mainDraw
     const cut = {
       seed: ev.seed, dur: ev.dur,
       inDur: Math.min(0.45, ev.dur * 0.3),
@@ -125,7 +126,6 @@ J.drawKeywords = (ctx, plan, t, W, H, sc) => {
       pass: 'main', step: 0, scale: 1, allowFilter: true,
       st: plan.style, fx: plan.fx, fps: plan.fps,
     };
-    // minimal item
     const it = {
       text: ev.text,
       x: ev.x * W, y: ev.y * H,
@@ -133,11 +133,27 @@ J.drawKeywords = (ctx, plan, t, W, H, sc) => {
       color: ev.color,
       font: 'gothic_bold',
       mi: 0,
-      // subtle shadow for readability over bg image
       shadow: { color: 'rgba(0,0,0,0.55)', blur: 8, dx: 0, dy: 2 },
     };
     try { J.mainDraw(env, it); } catch (e) { /* skip broken event */ }
+  };
+  // fixed-mode title: absolute position, no region transform
+  for (const ev of events) {
+    if (t < ev.start || t > ev.start + ev.dur) continue;
+    if (ev.isTitle && kw.titleMode === 'fixed') drawEvent(ev);
   }
+  // other keywords: with region transform
+  if (useRegion) {
+    ctx.save();
+    ctx.translate(region.x * W, region.y * H);
+    ctx.scale(region.w, region.h);
+  }
+  for (const ev of events) {
+    if (t < ev.start || t > ev.start + ev.dur) continue;
+    if (ev.isTitle && kw.titleMode === 'fixed') continue;
+    drawEvent(ev);
+  }
+  if (useRegion) ctx.restore();
 };
 
 })();

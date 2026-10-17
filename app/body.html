@@ -108,6 +108,10 @@
           <label class="field">密度<input id="kwDensity" type="range" min="0" max="1" step="0.05" value="0.5"></label>
         </div>
         <label class="field field-wide">フレーズ（1行に1つ）<textarea id="kwPhrases" rows="4" placeholder="例：&#10;上値&#10;急騰&#10;がんばれ"></textarea></label>
+        <div class="row">
+          <label class="check"><input id="regionEdit" type="checkbox"><span>領域をドラッグで調整</span></label>
+          <button id="btnRegionReset" class="ghost small">リセット</button>
+        </div>
       </div>
 
       <div class="sec">
@@ -118,7 +122,7 @@
 
     <!-- ================= center: stage ================= -->
     <section class="col col-stage" aria-label="プレビュー">
-      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div></div>
+      <div class="viewport" id="viewport"><canvas id="view" width="1280" height="720"></canvas><div id="viewMsg" class="overlay-msg" hidden></div><div id="keyBadge" class="key-badge" hidden></div><div id="toast" class="toast" role="status" aria-live="polite" hidden></div><div id="regionUI" hidden><div class="region-box" id="regionLyric" data-region="lyric"><span class="region-label">가사 영역</span><div class="region-handle"></div></div><div class="region-box kw" id="regionKeyword" data-region="keyword"><span class="region-label">키워드 영역</span><div class="region-handle"></div></div></div></div>
       <div class="transport">
         <button id="btnPlay" class="play" aria-label="再生">▶</button>
         <span id="timeNow" class="tc">00:00.00</span><span class="tc muted">/</span><span id="timeDur" class="tc muted">00:00.00</span>

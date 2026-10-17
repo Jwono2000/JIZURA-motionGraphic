@@ -128,6 +128,14 @@ class Renderer {
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
     }
     // ---------- content passes ----------
+    // motionGraphic: lyric region transform (lyrics scaled into the draggable region)
+    const lyricRegion = plan.regions && plan.regions.lyric;
+    const useLyricRegion = lyricRegion && (lyricRegion.x !== 0 || lyricRegion.y !== 0 || lyricRegion.w !== 1 || lyricRegion.h !== 1);
+    if (useLyricRegion) {
+      ctx.save();
+      ctx.translate(lyricRegion.x * W, lyricRegion.y * H);
+      ctx.scale(lyricRegion.w, lyricRegion.h);
+    }
     const passes = [
       { pass: 'B', lag: 1.6 / 24, off: [-3.4 * chroma * u, -1.3 * chroma * u] },
       { pass: 'A', lag: 0.8 / 24, off: [3.2 * chroma * u, 1.9 * chroma * u] },
@@ -215,6 +223,7 @@ class Renderer {
         ctx.restore();
       }
     }
+    if (useLyricRegion) ctx.restore();   // motionGraphic: end lyric region transform
     // ---------- HUD ----------
     if (plan.hud && !opt.noHud && layer !== 'back') {
       const env = this.makeEnv(ctx, plan, mainCut, sc, { pass: 'main', t: tq, lt: 0, ltb: 0, step, scale, allowFilter, energy, beat: beatInfo });

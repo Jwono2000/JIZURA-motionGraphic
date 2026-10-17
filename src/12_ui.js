@@ -1589,6 +1589,8 @@ function syncUI() {
     $('bgMediaDim').value = bm.dim ?? 0.25;
     J.bgMediaUI.refreshName();
   }
+  /* motionGraphic: keywords */
+  if (J.kwUI) J.kwUI.sync();
   document.querySelectorAll('.wa-toggle').forEach(el => { el.checked = S.project.wa !== false; });
   document.querySelectorAll('.extra-toggle').forEach(el => { el.checked = S.project.extra === true; });
   for (const set of J.SET_ORDER) document.querySelectorAll('.' + set + '-toggle').forEach(el => { el.checked = J.setOn(S.project, set); });
@@ -1659,6 +1661,34 @@ function bind() {
   $('bgMediaDim').addEventListener('input', e => { S.project.bgMedia.dim = +e.target.value; bgMediaApplyCfg(); replan(); });
   $('bgMediaDim').addEventListener('change', () => flushSave());
   J.bgMediaUI = { refreshName: bgMediaRefreshName, applyCfg: bgMediaApplyCfg };
+  /* motionGraphic: keywords */
+  const kwGet = () => {
+    if (!S.project.keywords) S.project.keywords = J.defaultKeywords ? J.defaultKeywords() : {};
+    return S.project.keywords;
+  };
+  const kwSync = () => {
+    const k = kwGet();
+    $('kwOn').checked = !!k.enabled;
+    $('kwTitle').value = k.title || '';
+    $('kwTitleMode').value = k.titleMode || 'random';
+    $('kwFg').value = k.fg || '#FFFFFF';
+    $('kwAccent').value = k.accent || '#FFD400';
+    $('kwDensity').value = k.density ?? 0.5;
+    $('kwPhrases').value = (k.phrases || []).join('\n');
+  };
+  $('kwOn').addEventListener('change', e => { kwGet().enabled = e.target.checked; replan(); flushSave(); });
+  $('kwTitle').addEventListener('input', e => { kwGet().title = e.target.value; replanSoon(400); });
+  $('kwTitle').addEventListener('change', () => flushSave());
+  $('kwTitleMode').addEventListener('change', e => { kwGet().titleMode = e.target.value; replan(); flushSave(); });
+  $('kwFg').addEventListener('input', e => { kwGet().fg = e.target.value; replanSoon(200); });
+  $('kwFg').addEventListener('change', () => flushSave());
+  $('kwAccent').addEventListener('input', e => { kwGet().accent = e.target.value; replanSoon(200); });
+  $('kwAccent').addEventListener('change', () => flushSave());
+  $('kwDensity').addEventListener('input', e => { kwGet().density = +e.target.value; replanSoon(300); });
+  $('kwDensity').addEventListener('change', () => flushSave());
+  $('kwPhrases').addEventListener('input', e => { kwGet().phrases = e.target.value.split('\n'); replanSoon(400); });
+  $('kwPhrases').addEventListener('change', () => flushSave());
+  J.kwUI = { sync: kwSync };
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapRate').addEventListener('change', () => {

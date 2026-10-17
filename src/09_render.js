@@ -120,6 +120,13 @@ class Renderer {
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
     }
     const shx = J.rs(step, 71) * shake * 16 * u, shy = J.rs(step, 72) * shake * 11 * u;
+    // ---------- keyword layer (motionGraphic): independent from lyrics ----------
+    if (J.drawKeywords && plan.kwEvents && plan.kwEvents.length && (!opt.transparent || layer === 'back') && !key) {
+      ctx.save();
+      try { J.drawKeywords(ctx, plan, tq, W, H, sc); } catch (e) { console.warn('keywords', e); }
+      ctx.restore();
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    }
     // ---------- content passes ----------
     const passes = [
       { pass: 'B', lag: 1.6 / 24, off: [-3.4 * chroma * u, -1.3 * chroma * u] },

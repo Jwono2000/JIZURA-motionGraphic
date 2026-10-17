@@ -1931,6 +1931,51 @@ function bind() {
   $('modeEasy').addEventListener('click', () => setMode('easy'));
   $('modeMobile').addEventListener('click', () => setMode('mobile'));
   $('btnOmakaseTop').addEventListener('click', omakase);
+  /* motionGraphic: presets */
+  const presetRefresh = () => {
+    const sel = $('presetSel');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">プリセット</option>';
+    for (const p of J.presetAll()) {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = (p.id.startsWith('builtin-') ? '★ ' : '') + p.name;
+      sel.appendChild(o);
+    }
+    if (cur) sel.value = cur;
+  };
+  const presetApply = (id) => {
+    const p = J.presetGet(id);
+    if (!p) return;
+    J.presetToProject(S.project, p.config);
+    syncUI(); replan(); flushSave();
+    toast(`プリセット「${p.name}」を適用しました`);
+  };
+  $('presetSel').addEventListener('change', e => {
+    if (e.target.value) presetApply(e.target.value);
+    e.target.value = '';
+  });
+  $('btnPresetSave').addEventListener('click', () => {
+    const name = prompt('プリセット名:', '');
+    if (!name || !name.trim()) return;
+    J.presetSave(name.trim(), J.presetFromProject(S.project));
+    presetRefresh();
+    toast(`プリセット「${name.trim()}」を保存しました`);
+  });
+  // long-press / right-click to delete user preset
+  $('presetSel').addEventListener('contextmenu', e => {
+    const sel = $('presetSel');
+    const id = sel.value || (sel.selectedOptions[0] && sel.selectedOptions[0].value);
+    // use the hovered option via a simple prompt instead
+    e.preventDefault();
+    const list = J.presetList();
+    if (!list.length) { toast('削除できるプリセットがありません'); return; }
+    const name = prompt(`削除するプリセット名を入力:\n${list.map(p => '・' + p.name).join('\n')}`, '');
+    if (!name) return;
+    const t = list.find(p => p.name === name.trim());
+    if (t) { J.presetDelete(t.id); presetRefresh(); toast(`プリセット「${t.name}」を削除しました`); }
+  });
+  presetRefresh();
+  J.presetUI = { refresh: presetRefresh };
   $('btnMenu').addEventListener('click', () => { const on = !$('app').classList.contains('menu-open'); $('app').classList.toggle('menu-open', on); $('btnMenu').setAttribute('aria-expanded', String(on)); mobileBar(); });
   document.querySelectorAll('.sec > .sec-h h2').forEach(h => h.addEventListener('click', () => { if (S.mode === 'mobile') h.closest('.sec').classList.toggle('fold'); }));
   if (window.ResizeObserver) new ResizeObserver(mobileBar).observe(document.querySelector('.bar'));
@@ -1948,7 +1993,52 @@ function bind() {
   const openTerms = () => { if (dlg.showModal) { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', ''); };
   document.querySelectorAll('.terms-open').forEach(b => b.addEventListener('click', openTerms));
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close ? dlg.close() : dlg.removeAttribute('open'); });   // click on the backdrop
-  $('btnSave').addEventListener('click', () => J.saveFile(baseName() + '.jizura.json', JSON.stringify(Object.assign({}, S.project, { appVersion: '@VERSION@' }), null, 1)));
+  /* motionGraphic: save with file picker (overwrite) instead of auto-download */
+  $('btnSave').addEventListener('click', async () => {
+    const data = JSON.stringify(Object.assign({}, S.project, { appVersion: '@VERSION@' }), null, 1);
+    const fname = baseName() + '.jizura.json';
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        let hnd = S.saveHandle;
+        if (!hnd) {
+          hnd = await window.showSaveFilePicker({
+            suggestedName: fname,
+            types: [{ description: 'JIZURA 프로젝트', accept: { 'application/json': ['.json'] } }],
+          });
+          S.saveHandle = hnd;
+        }
+        const w = await hnd.createWritable();
+        await w.write(data);
+        await w.close();
+        toast(`保存しました: ${hnd.name}`);
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;   // user cancelled
+        // fall through to download
+      }
+    }
+    await J.saveFile(fname, data);
+  });
+  /* motionGraphic: save-as (pick a new file) */
+  const btnSaveAs = document.createElement('button');
+  btnSaveAs.id = 'btnSaveAs'; btnSaveAs.className = 'ghost'; btnSaveAs.textContent = '別名保存';
+  btnSaveAs.title = '名前を付けて保存';
+  $('btnSave').after(btnSaveAs);
+  btnSaveAs.addEventListener('click', async () => {
+    const data = JSON.stringify(Object.assign({}, S.project, { appVersion: '@VERSION@' }), null, 1);
+    if (typeof window.showSaveFilePicker !== 'function') { await J.saveFile(baseName() + '.jizura.json', data); return; }
+    try {
+      const hnd = await window.showSaveFilePicker({
+        suggestedName: baseName() + '.jizura.json',
+        types: [{ description: 'JIZURA 프로젝트', accept: { 'application/json': ['.json'] } }],
+      });
+      S.saveHandle = hnd;
+      const w = await hnd.createWritable();
+      await w.write(data);
+      await w.close();
+      toast(`保存しました: ${hnd.name}`);
+    } catch (e) { if (!e || e.name !== 'AbortError') await J.saveFile(baseName() + '.jizura.json', data); }
+  });
   $('btnAE').addEventListener('click', () => J.saveFile(baseName() + rangeSuffix() + '_ae.json', JSON.stringify(J.planForAE(S.plan, S.project, exportRange()), null, 1)));
   audioNameDefault = $('audioName').textContent;
   $('btnClearLyrics').addEventListener('click', clearLyrics);

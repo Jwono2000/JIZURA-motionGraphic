@@ -1935,7 +1935,12 @@ function bind() {
   const presetRefresh = () => {
     const sel = $('presetSel');
     const cur = sel.value;
-    sel.innerHTML = '<option value="">プリセット</option>';
+    // preserve the i18n-translated placeholder
+    const placeholder = sel.options[0] ? sel.options[0].textContent : '프리셋';
+    sel.innerHTML = '';
+    const o0 = document.createElement('option');
+    o0.value = ''; o0.textContent = placeholder;
+    sel.appendChild(o0);
     for (const p of J.presetAll()) {
       const o = document.createElement('option');
       o.value = p.id; o.textContent = (p.id.startsWith('builtin-') ? '★ ' : '') + p.name;

@@ -79,6 +79,23 @@
       </div>
 
       <div class="sec">
+        <div class="sec-h"><h2>背景メディア</h2></div>
+        <div id="bgMediaName" class="muted audio-name">なし（画像・動画を読み込むと背景になります）</div>
+        <div class="row">
+          <label class="file" title="jpg / png / mp4 など（複数可）">画像・動画を読み込む<input id="bgMediaFile" type="file" accept="image/*,video/*" multiple></label>
+          <button id="btnBgMediaClear" class="ghost small">クリア</button>
+        </div>
+        <div class="row">
+          <label class="check"><input id="bgMediaOn" type="checkbox"><span>背景メディアを使う</span></label>
+        </div>
+        <div class="fields">
+          <label class="field">切り替え<select id="bgMediaSw"><option value="part">パートごと</option><option value="random">ランダム</option></select></label>
+          <label class="field">収め方<select id="bgMediaFit"><option value="cover">カバー（画面いっぱい）</option><option value="contain">コンテイン（全体表示）</option></select></label>
+          <label class="field">暗くする<input id="bgMediaDim" type="range" min="0" max="0.7" step="0.05" value="0.25"></label>
+        </div>
+      </div>
+
+      <div class="sec">
         <div class="sec-h"><h2>行とカット</h2><span id="linesInfo" class="muted mono"></span></div>
         <ol id="lineList"></ol>
       </div>

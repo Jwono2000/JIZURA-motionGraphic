@@ -23,6 +23,7 @@ J.defaultProject = () => ({
   kinetic: true,                  // キネティック parts
   lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
+  bgMedia: { mode: 'off', sw: 'part', fit: 'cover', dim: 0.25 },  // motionGraphic: user bg image/video (off|on, part|random, cover|contain)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
   typeset: false,                 // 文字整列: kana tracking, small particles / big first character, Latin sizing, 0.2 s lead, restraint
   centerDir: 'tb',                // 中央を空ける on tall frames: 'tb' = top / bottom, 'lr' = left / right
@@ -295,6 +296,7 @@ J.plan = (project, audio) => {
     lines: [], cuts: [], events: [], beats: audio && audio.beats ? audio.beats.slice() : [],
     hud: fx.hud === 'on' ? true : fx.hud === 'off' ? false : !!st.hud,
     keyBg: J.keyMode ? J.keyMode(project) : null,   // 'green' | 'black' | null — 合成用の背景
+    bgMedia: Object.assign({ mode: 'off', sw: 'part', fit: 'cover', dim: 0.25 }, project.bgMedia || {}),
     centerFree: !!zones, zones,
     typeset: !!project.typeset, unify: !!project.unify,
     lang: J.resolveLang ? J.resolveLang(project) : 'ja',   // 歌詞の言語 (auto → detected)
@@ -325,13 +327,15 @@ J.plan = (project, audio) => {
 
   // 統一感: sections, repeated lines, キメ lines and the per-section palettes (see makeUnify below)
   const U = plan.unify ? makeUnify(parsed.lines, { st, en, fx, history, lang: plan.lang, seed: project.seed }) : null;
+  let __sec = 0;
   parsed.lines.forEach((ln, li) => {
+    if (li > 0 && ln.gapBefore) __sec++;
     const s = tm.starts[li], e = tm.ends[li];
     const ov = (project.overrides || {})[li] || {};
     const lineSeed = ov.lock && ov.lockedSeed != null ? ov.lockedSeed : J.h(project.seed, li + 1, ov.seed | 0);
     const rng = J.rng(lineSeed);
     if (ln.interlude) {                                    // [間奏]: background, decorations and screen effects only
-      plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: '', interlude: true, secs: ln.secs, start: s, end: e, visEnd: e, note: null, impact: false, emph: [], chunks: [], seed: lineSeed });
+      plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: '', interlude: true, secs: ln.secs, start: s, end: e, visEnd: e, note: null, impact: false, emph: [], chunks: [], seed: lineSeed, sec: __sec });
       const bg = ov.bg && J.BG[ov.bg] ? ov.bg : pickBg(rng, st, en, fx, bgHistory); bgHistory.push(bg);
       const dur = e - s, showTitle = dur >= 6 && !!(title || artist);
       plan.cuts.push(makeCut({ text: '', lineText: '', line: li, start: s, end: e, layout: 'interlude', enter: 'blur', exit: 'blur', hold: 'still', inDur: 0.4, outDur: 0.4,
@@ -347,7 +351,7 @@ J.plan = (project, audio) => {
     const n = [...ln.text.replace(/\s+/g, '')].length;
     const visEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
     const D = visEnd - s;
-    plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
+    plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed, sec: __sec });
     const chunks = ln.manual || (plan.lang === 'en' ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
     plan.lines[li].chunks = chunks;
     const L = J.lerp(1.3, 0.5, fx.density);
@@ -912,6 +916,8 @@ function pickTreat(rng, st, en, fx, LD, emph, history) {
   return cands.length ? rng.wpick(cands) : 'none';
 }
 function pickBg(rng, st, en, fx, bgHist) {
+  // motionGraphic: user bg media takes over when enabled and loaded
+  if (J.BG && J.BG.bgMedia && J.bgMediaCfg && J.bgMediaCfg.mode === 'on' && J.bgMediaList && J.bgMediaList.length) return 'bgMedia';
   if (!rng.chance(0.2 + 0.35 * (fx.decor ?? 0.5) + 0.2 * (fx.bgSwitch ?? 0.35))) return 'none';
   const last = bgHist.slice(-3);
   const cands = J.BG_ORDER.filter(k => k !== 'none' && en.bg && en.bg[k] !== false && J.BG[k])

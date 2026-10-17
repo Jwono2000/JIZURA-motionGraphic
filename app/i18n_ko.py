@@ -1,6 +1,17 @@
 """Korean copy for the browser edition (same glossary keys as app/english.py). The Japanese source stays authoritative."""
 
 BODY = {
+    '<div class="sec-h"><h2>背景メディア</h2></div>': '<div class="sec-h"><h2>배경 미디어</h2></div>',
+    'なし（画像・動画を読み込むと背景になります）': '없음(이미지·동영상을 불러오면 배경이 됩니다)',
+    'title="jpg / png / mp4 など（複数可）">画像・動画を読み込む': 'title="jpg / png / mp4 등(여러 개 가능)">이미지·동영상 불러오기',
+    '<button id="btnBgMediaClear" class="ghost small">クリア</button>': '<button id="btnBgMediaClear" class="ghost small">지우기</button>',
+    '<span>背景メディアを使う</span>': '<span>배경 미디어 사용</span>',
+    '<label class="field">切り替え<select id="bgMediaSw"><option value="part">パートごと</option><option value="random">ランダム</option></select></label>': '<label class="field">전환<select id="bgMediaSw"><option value="part">파트마다</option><option value="random">랜덤</option></select></label>',
+    '<label class="field">収め方<select id="bgMediaFit"><option value="cover">カバー（画面いっぱい）</option><option value="contain">コンテイン（全体表示）</option></select></label>': '<label class="field">맞춤<select id="bgMediaFit"><option value="cover">꽉 채우기(화면 가득)</option><option value="contain">전부 보이기</option></select></label>',
+    '<label class="field">暗くする': '<label class="field">어둡게',
+    '背景メディアをオンにしました': '배경 미디어를 켰습니다',
+    '背景メディアを消しました': '배경 미디어를 지웠습니다',
+    '先に画像・動画を読み込んでください': '먼저 이미지·동영상을 불러오세요',
     '1行に複数のカットがあるときは、カットが切り替わる瞬間に <span class="kbd">Tab</span> を押すと、その行のカットの開始時刻も合わせられます。': '한 줄에 컷이 여러 개일 때는 컷이 바뀌는 순간 <span class="kbd">Tab</span> 을 누르면 그 줄의 컷 시작 시각도 맞출 수 있습니다.',
     '<label>速さ <select id="tapRate" aria-label="タップ中の再生速度">': '<label>속도 <select id="tapRate" aria-label="탭하는 동안의 재생 속도">',
     '<input type="checkbox" id="tapCount"> カウントダウン</label>': '<input type="checkbox" id="tapCount"> 카운트다운</label>',

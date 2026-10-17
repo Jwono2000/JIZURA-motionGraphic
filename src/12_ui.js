@@ -1579,6 +1579,16 @@ function syncUI() {
   $('offset').value = S.project.timing.offset ?? 0.4;
   $('lineScale').value = S.project.timing.lineScale ?? 1;
   $('snap').checked = !!S.project.timing.snap;
+  /* motionGraphic: bg media */
+  if (J.bgMediaUI) {
+    J.bgMediaUI.applyCfg();
+    const bm = S.project.bgMedia || {};
+    $('bgMediaOn').checked = bm.mode === 'on';
+    $('bgMediaSw').value = bm.sw || 'part';
+    $('bgMediaFit').value = bm.fit || 'cover';
+    $('bgMediaDim').value = bm.dim ?? 0.25;
+    J.bgMediaUI.refreshName();
+  }
   document.querySelectorAll('.wa-toggle').forEach(el => { el.checked = S.project.wa !== false; });
   document.querySelectorAll('.extra-toggle').forEach(el => { el.checked = S.project.extra === true; });
   for (const set of J.SET_ORDER) document.querySelectorAll('.' + set + '-toggle').forEach(el => { el.checked = J.setOn(S.project, set); });
@@ -1607,6 +1617,48 @@ function bind() {
   $('snap').addEventListener('change', e => { S.project.timing.snap = e.target.checked; replan(); });
   $('btnResetTimes').addEventListener('click', () => { S.project.timing.lineTimes = {}; replan(); });
   $('audioFile').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadAudioFile(f); });
+  /* motionGraphic: background media */
+  const bgMediaNameEl = () => $('bgMediaName');
+  const bgMediaRefreshName = () => {
+    const n = J.bgMediaList.length;
+    bgMediaNameEl().textContent = n ? J.bgMediaList.map((m, i) => `${i + 1}. ${m.name}`).join(' / ') : 'なし（画像・動画を読み込むと背景になります）';
+  };
+  const bgMediaApplyCfg = () => {
+    const p = S.project.bgMedia || {};
+    J.bgMediaCfg = { mode: p.mode || 'off', sw: p.sw || 'part', fit: p.fit || 'cover', dim: p.dim ?? 0.25 };
+  };
+  $('bgMediaFile').addEventListener('change', async e => {
+    const files = [...(e.target.files || [])];
+    e.target.value = '';
+    if (!files.length) return;
+    let ok = 0;
+    for (const f of files) {
+      try { await J.addBgMedia(f); ok++; }
+      catch (err) { toast(`読み込めませんでした: ${f.name}`); }
+    }
+    bgMediaRefreshName();
+    if (ok && S.project.bgMedia.mode !== 'on') {
+      S.project.bgMedia.mode = 'on'; $('bgMediaOn').checked = true;
+      toast('背景メディアをオンにしました');
+    }
+    bgMediaApplyCfg(); replan(); flushSave();
+  });
+  $('btnBgMediaClear').addEventListener('click', () => {
+    J.bgMediaClear(); J.clearBgMediaStore();
+    S.project.bgMedia.mode = 'off'; $('bgMediaOn').checked = false;
+    bgMediaRefreshName(); bgMediaApplyCfg(); replan(); flushSave();
+    toast('背景メディアを消しました');
+  });
+  $('bgMediaOn').addEventListener('change', e => {
+    S.project.bgMedia.mode = e.target.checked ? 'on' : 'off';
+    if (e.target.checked && !J.bgMediaList.length) toast('先に画像・動画を読み込んでください');
+    bgMediaApplyCfg(); replan(); flushSave();
+  });
+  $('bgMediaSw').addEventListener('change', e => { S.project.bgMedia.sw = e.target.value; bgMediaApplyCfg(); replan(); flushSave(); });
+  $('bgMediaFit').addEventListener('change', e => { S.project.bgMedia.fit = e.target.value; bgMediaApplyCfg(); replan(); flushSave(); });
+  $('bgMediaDim').addEventListener('input', e => { S.project.bgMedia.dim = +e.target.value; bgMediaApplyCfg(); replan(); });
+  $('bgMediaDim').addEventListener('change', () => flushSave());
+  J.bgMediaUI = { refreshName: bgMediaRefreshName, applyCfg: bgMediaApplyCfg };
   $('btnTap').addEventListener('click', () => (S.tap ? stopTap() : startTap()));
   $('tapBtn').addEventListener('click', tapNow);
   $('tapRate').addEventListener('change', () => {
@@ -1936,6 +1988,8 @@ function boot() {
   requestAnimationFrame(tick);
   // the song used last time (same name as the saved project's) comes back after a reload
   if (J.loadSong && S.project.audioName) J.loadSong().then(f => { if (f && f.name === S.project.audioName && !S.audio) loadAudioFile(f, true); });
+  /* motionGraphic: restore bg media from this browser */
+  if (J.loadBgMediaAll) J.loadBgMediaAll().then(() => { if (J.bgMediaUI) J.bgMediaUI.refreshName(); });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 J.ui = S;

@@ -187,6 +187,7 @@ async function encodeMP4({ plan, project, audio, onProgress, signal, range, file
       if (signal && signal.aborted) { closeEnc(); throw new Error('キャンセルしました'); }
       if (err) throw err;
       if (venc.state === 'closed') throw new Error('エンコーダーが停止しました');
+      if (J.bgMediaSyncFrame) await J.bgMediaSyncFrame(span.t0 + i / fps);   // motionGraphic: seek bg video to frame time
       R.frame(ctx, plan, span.t0 + i / fps, { scale });
       const vf = new VideoFrame(canvas, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
       try { venc.encode(vf, { keyFrame: i % (fps * 2) === 0 }); } finally { vf.close(); }
@@ -282,6 +283,7 @@ J.exportPNGZip = async ({ plan, project, transparent, layers, onProgress, signal
   const scale = w / plan.W;
   for (let i = 0; i < total; i += every) {
     if (signal && signal.aborted) throw new Error('キャンセルしました');
+    if (J.bgMediaSyncFrame) await J.bgMediaSyncFrame(span.t0 + i / fps);   // motionGraphic: seek bg video to frame time
     const name = `jizura_${String(i).padStart(5, '0')}.png`;
     for (const layer of layers ? ['back', 'front'] : [null]) {
       R.frame(ctx, plan, span.t0 + i / fps, { scale, transparent: transparent || !!layers, layer });

@@ -443,7 +443,7 @@ button.small.primary { padding: 4px 12px; }
 
 /* motionGraphic: draggable region boxes */
 #regionUI { position: absolute; inset: 0; pointer-events: none; }
-.region-box { position: absolute; border: 2px dashed #4da6ff; background: rgba(77,166,255,0.08); pointer-events: auto; cursor: move; box-sizing: border-box; }
+.region-box { position: absolute; border: 2px dashed #4da6ff; background: rgba(77,166,255,0.08); pointer-events: auto; cursor: move; box-sizing: border-box; touch-action: none; }
 .region-box.kw { border-color: #4dff88; background: rgba(77,255,136,0.08); }
 .region-label { position: absolute; top: -22px; left: 0; font-size: 12px; color: #4da6ff; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none; }
 .region-box.kw .region-label { color: #4dff88; }

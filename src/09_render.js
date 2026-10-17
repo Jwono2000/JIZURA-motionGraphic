@@ -78,6 +78,13 @@ class Renderer {
     if (key && !opt.transparent) { ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, W, H); }
     else if (!opt.transparent) {
       ctx.fillStyle = sc.bg; ctx.fillRect(0, 0, W, H);
+      // motionGraphic: bg media base layer (draws even with no active cut, e.g. gaps/interludes)
+      if (J.drawBgMediaBase && plan.bgMedia && plan.bgMedia.mode === 'on') {
+        ctx.save();
+        try { J.drawBgMediaBase(ctx, plan, tq, W, H); } catch (e) { console.warn('bgMediaBase', e); }
+        ctx.restore();
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+      }
       const g = ctx.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H / 2, Math.hypot(W, H) * 0.6);
       const lift = J.lum(sc.bg) < 0.5 ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.10)';
       g.addColorStop(0, lift); g.addColorStop(1, 'rgba(0,0,0,0)');

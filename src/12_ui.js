@@ -1723,11 +1723,15 @@ function bind() {
     const view = $('view');
     const vr = view.getBoundingClientRect();
     const r = Object.assign({}, regionGet()[k] || { x: 0, y: 0, w: 1, h: 1 });
-    dragSt = { k, isResize, vr, r, sx: e.clientX, sy: e.clientY };
+    // support both mouse and touch
+    const pt = e.touches ? e.touches[0] : e;
+    dragSt = { k, isResize, vr, r, sx: pt.clientX, sy: pt.clientY };
     const move = (ev) => {
       if (!dragSt) return;
-      const dx = (ev.clientX - dragSt.sx) / dragSt.vr.width;
-      const dy = (ev.clientY - dragSt.sy) / dragSt.vr.height;
+      if (ev.cancelable) ev.preventDefault();
+      const p = ev.touches ? ev.touches[0] : ev;
+      const dx = (p.clientX - dragSt.sx) / dragSt.vr.width;
+      const dy = (p.clientY - dragSt.sy) / dragSt.vr.height;
       const nr = Object.assign({}, dragSt.r);
       if (dragSt.isResize) {
         nr.w = Math.min(1 - nr.x, Math.max(0.05, dragSt.r.w + dx));
@@ -1744,9 +1748,15 @@ function bind() {
       dragSt = null;
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchmove', move);
+      window.removeEventListener('touchend', up);
+      window.removeEventListener('touchcancel', up);
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', up);
+    window.addEventListener('touchcancel', up);
   };
   const regionBind = () => {
     const boxes = regionBoxes();
@@ -1758,6 +1768,10 @@ function bind() {
         const isResize = e.target.classList.contains('region-handle');
         regionDown(e, k, isResize);
       });
+      b.addEventListener('touchstart', (e) => {
+        const isResize = e.target.classList.contains('region-handle');
+        regionDown(e, k, isResize);
+      }, { passive: false });
     }
   };
   $('regionEdit').addEventListener('change', e => {

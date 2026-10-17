@@ -115,8 +115,6 @@ J.bgMediaSync = (env) => {
 J.bgMediaSyncFrame = async (t) => {
   const list = J.bgMediaList;
   if (!list.length) return;
-  // find index the same way draw() would (no env here; replicate 'part' via time is hard —
-  // export renders sequentially so we sync every video to t)
   for (const m of list) {
     if (m.kind !== 'video' || !m.duration) continue;
     const v = m.el;
@@ -131,6 +129,55 @@ J.bgMediaSyncFrame = async (t) => {
         });
       } catch (e) {}
     }
+  }
+};
+
+/* base layer: draw bg media by time (covers gaps between cuts where mainCut is null) */
+J.drawBgMediaBase = (ctx, plan, t, W, H) => {
+  const list = J.bgMediaList;
+  if (!list.length) return;
+  const cfg = (plan && plan.bgMedia) || J.bgMediaCfg;
+  if (!cfg || cfg.mode !== 'on') return;
+  const n = list.length;
+  let idx = 0;
+  const sw = cfg.sw || 'part';
+  if (n > 1) {
+    if (sw === 'random') {
+      const seg = Math.floor(t / 8);
+      const seed = (plan && plan.seed) || 0;
+      let h = (seed ^ Math.imul(seg + 1, 2654435761)) | 0;
+      h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16;
+      idx = ((h >>> 0) % n + n) % n;
+    } else {
+      // find section by time
+      let sec = 0;
+      if (plan && plan.lines) {
+        for (const L of plan.lines) {
+          if (L.start > t) break;
+          if (L.sec != null) sec = L.sec;
+        }
+      }
+      idx = ((sec % n) + n) % n;
+    }
+  }
+  const m = list[idx % n];
+  if (!m) return;
+  const fit = cfg.fit || 'cover';
+  if (m.kind === 'video') {
+    const v = m.el;
+    if (v.readyState < 2 || !v.videoWidth) return;
+    const target = ((t % v.duration) + v.duration) % v.duration;
+    if (Math.abs(v.currentTime - target) > 0.15) { try { v.currentTime = target; } catch (e) {} }
+    if (v.paused) { v.play().catch(() => {}); }
+    drawFit(ctx, v, v.videoWidth, v.videoHeight, W, H, fit);
+  } else {
+    if (!m.el.complete || !m.w) return;
+    drawFit(ctx, m.el, m.w, m.h, W, H, fit);
+  }
+  const dim = cfg.dim || 0;
+  if (dim > 0.01) {
+    ctx.fillStyle = `rgba(0,0,0,${dim.toFixed(3)})`;
+    ctx.fillRect(0, 0, W, H);
   }
 };
 
@@ -150,28 +197,7 @@ reg('bgMedia', {
   w: 1,
   plan: rng => ({ seed: (rng.int(1e9) >>> 0) }),
   draw(env, P) {
-    const ctx = env.ctx;
-    const list = J.bgMediaList;
-    if (!list.length) return;
-    const m = list[J.bgMediaIndex(env) % list.length];
-    if (!m) return;
-    const { W, H } = env;
-    const cfg = (env.plan && env.plan.bgMedia) || J.bgMediaCfg;
-    const fit = cfg.fit || 'cover';
-    J.bgMediaSync(env);
-    if (m.kind === 'video') {
-      const v = m.el;
-      if (v.readyState < 2 || !v.videoWidth) return;
-      drawFit(ctx, v, v.videoWidth, v.videoHeight, W, H, fit);
-    } else {
-      if (!m.el.complete || !m.w) return;
-      drawFit(ctx, m.el, m.w, m.h, W, H, fit);
-    }
-    const dim = cfg.dim || 0;
-    if (dim > 0.01) {
-      ctx.fillStyle = `rgba(0,0,0,${dim.toFixed(3)})`;
-      ctx.fillRect(0, 0, W, H);
-    }
+    // no-op: actual drawing is done by J.drawBgMediaBase (covers gaps with no active cut)
   }
 });
 

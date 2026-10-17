@@ -149,7 +149,8 @@ reg('bgMedia', {
   tags: ['pop', 'graphic', 'emotional', 'calm', 'editorial'],
   w: 1,
   plan: rng => ({ seed: (rng.int(1e9) >>> 0) }),
-  draw(env, P, ctx) {
+  draw(env, P) {
+    const ctx = env.ctx;
     const list = J.bgMediaList;
     if (!list.length) return;
     const m = list[J.bgMediaIndex(env) % list.length];
